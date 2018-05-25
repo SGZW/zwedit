@@ -11,11 +11,15 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import com.sun.jersey.spi.container.servlet.ServletContainer; 
 
 import com.upcacm.zwedit.event.EventServlet;
+import com.upcacm.zwedit.controller.ZweditController;
 
 public class ZweditServer {
 
     public static void main(String[] args) throws Exception {
         
+        //controller init
+        ZweditController.getZweditController();
+       
         Server server = new Server();
         
         NetworkTrafficServerConnector connector = new NetworkTrafficServerConnector(server);
@@ -36,7 +40,7 @@ public class ZweditServer {
         context.addServlet(sh, "/*");
        
         server.setHandler(context);
-
+         
         server.start();
         server.join();
     }
