@@ -4,12 +4,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import com.upcacm.zwedit.controller.ZweditController;
+import com.upcacm.zwedit.controller.EditRoom;
 
 @WebSocket
 public class EventSocket {
@@ -17,16 +20,21 @@ public class EventSocket {
     private final Logger logger = LoggerFactory.getLogger(EventSocket.class);
     
     @OnWebSocketConnect
-    public void onConnect(Session session) {
-    	System.out.println(session);
+    public void onConnect(Session session) { 
+        String roomUrl = session.getUpgradeRequest().getParameterMap().get("roomUrl").get(0);
+        String sid = session.getUpgradeRequest().getParameterMap().get("sid").get(0);
+        ZweditController c = ZweditController.getZweditController();
+        EditRoom e = c.getEditRoom(roomUrl);
+        e.addSession(sid, session);
+        session.getRemote().sendString(e.getText(), null);       
     }
     
     @OnWebSocketMessage
     public void onText(Session session, String message) {
-        if (session.isOpen()) {
-            System.out.println(message);
-            session.getRemote().sendString(message, null);
-        }
+        String roomUrl = session.getUpgradeRequest().getParameterMap().get("roomUrl").get(0);
+        String sid = session.getUpgradeRequest().getParameterMap().get("sid").get(0);
+        EditRoom e = ZweditController.getZweditController().getEditRoom(roomUrl);
+        e.process(sid, message);
     }
     
     @OnWebSocketError

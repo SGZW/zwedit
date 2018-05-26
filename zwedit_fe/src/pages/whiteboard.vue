@@ -3,7 +3,7 @@
      <Col span="20">
       <Card>
 	<codemirror ref="myCm"
-              :value="code" 
+              v-model="code" 
               :options="cmOptions"
               @input="onCmCodeChange">
        </codemirror>
@@ -112,6 +112,7 @@
   import 'codemirror/addon/fold/markdown-fold.js'
   import 'codemirror/addon/fold/xml-fold.js'
   
+  import request from '@/libs/request';  
   export default {
     components: {
       codemirror
@@ -119,8 +120,12 @@
 
     data() {
       return {
-	sokcet: '',
+	socket: '',
+        lastcode: '',
         code: '',
+        roomUrl: '',
+        sid: '',
+        intervalId: '',
         cmOptions: {
           tabSize: 4,
           styleSelectedText: true,
@@ -200,8 +205,8 @@
       }
     },
     methods: {
-    	createWebSocket() {
-            let url = 'ws://' + document.domain + ':8080/\events';
+    	createWebSocket(roomUrl, sid) {
+            let url = 'ws://' + document.domain + ':8080/\events?' + 'roomUrl=' + this.roomUrl + '&sid=' + this.sid;
             console.log(url);
 	    this.socket = new WebSocket(url);
 	    this.socket.onopen = this.wsOpen;
@@ -210,7 +215,6 @@
         },
 	wsOpen() {
 	    console.log('Connection open ...');
-	    this.wsSend('hello, this is zwedit'); 
 	},
 	wsSend(data) {
 	    this.socket.send(data);
@@ -219,31 +223,50 @@
 	    console.log('Connection closed.');
 	},
 	wsMessage(evt) {
+            if(this.code !== evt.data) {
+                 this.lastcode = evt.data;
+                 this.code = evt.data;
+            }
 	    console.log('Received Message: ' + evt.data);
 	},
-        onCmCodeChange(newCode) {
-            console.log('this is new code', newCode)
-            this.code = newCode
-	    this.wsSend(newCode);
+        onCmCodeChange() {
+            console.log('this is new code', this.code);
+            if(this.lastcode !== this.code) {
+                this.lastcode = this.code;
+	        this.wsSend(this.code);
+            }
         }
     },
-    created() {
-	this.createWebSocket();
+    mounted() {
+        this.roomUrl = this.$route.params.id;
+        request({
+            url: '/whiteboards/' + this.roomUrl,
+            method: 'get',
+        }).then((res) => {
+            console.log(res);
+            if(!res.msg.exist) {
+              this.$router.replace({path: '/404'});
+              return;
+            }
+            this.sid = res.msg.sid;
+            this.createWebSocket(this.roomUrl, this.sid);
+            let that = this;
+            this.intervalId = setInterval(function(){
+                if(that.socket.readyState !== WebSocket.OPEN) {
+                    that.form.state = false;
+                }
+            }, 1000);
+
+       });
     },
     beforeDestroy () {
-       this.socket.close();
+       console.log(this.socket);
+       if(this.socket !== '') {
+           this.socket.close();
+       }
+       if(this.intervalId !== '') {
+           clearInterval(this.intervalId);
+       }
     },
-    mounted(){
-        //console.log(document.domain);
-        //console.log(window.location.host);
-	console.log(this.$route.params);
-	//this.$router.replace({name: 'error-404'});
-        let that = this;
-        setInterval(function(){
-	    if(that.socket.readyState !== WebSocket.OPEN) {
-	        that.form.state = false;
-            }
-	}, 1000);
-    },
-  }
+}
 </script>

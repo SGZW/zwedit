@@ -16,6 +16,7 @@ public class EditRoom {
     
     public EditRoom() {
         sessionId = 0;
+        text = "";
 	store = new ConcurrentHashMap<String, Session>();
     }
     
@@ -32,11 +33,12 @@ public class EditRoom {
 	store.put(id, session);
     }
     
-    public synchronized void process(String newText) {
+    public synchronized void process(String sid, String newText) {
         this.text = newText;
         HashSet<String> del = new HashSet<String>();
         for(Map.Entry<String, Session> entry: store.entrySet()) {
             String id = entry.getKey();
+            if(id.equals(sid)) continue;
             Session session = entry.getValue();
             if(!session.isOpen()) {
             	del.add(id);	

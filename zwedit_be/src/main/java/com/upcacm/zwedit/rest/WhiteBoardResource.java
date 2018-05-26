@@ -1,5 +1,7 @@
 package com.upcacm.zwedit.rest;
   
+import java.util.UUID;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -21,6 +23,10 @@ public class WhiteBoardResource {
 	return "\"" + msg + "\"";
     }
     
+    public static String generateId() {
+    	return UUID.randomUUID().toString().replace("-", "");
+    }
+    
     @GET
     @Path("{whiteboardurl}")
     @Produces(MediaType.TEXT_PLAIN)
@@ -31,22 +37,26 @@ public class WhiteBoardResource {
 	else {
             res += "true, ";
 	    EditRoom e = c.getEditRoom(url);
-	    String text = addQuote(e.getText());
             String sid = addQuote(e.getNewSessionId());
-            res += "\"text\":" + text + ",";
             res += "\"sid\":" + sid + "}";
         }
         return formatRes("success", res);
     }
   
     @POST
-    @Path("{whiteboardurl}")
     @Produces(MediaType.TEXT_PLAIN)
-    public String createWhiteboard(String body, @PathParam("whiteboardurl") String url) throws Exception {
+    public String createWhiteboard(String body) throws Exception {
 	ZweditController c = ZweditController.getZweditController();
-        if(!c.exists(url)) {
-            c.createEditRoom(url);
+	String url = "";
+        while(true) {
+	    url = generateId();
+            if(!c.exists(url)) {
+               c.createEditRoom(url);
+               break;
+            }
         }
-        return formatRes("success", "true");
+        url = addQuote(url);
+        return formatRes("success", url);
     }
+
 }

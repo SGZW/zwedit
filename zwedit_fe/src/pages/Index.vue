@@ -35,7 +35,13 @@
 	},
         methods: {
 	    createNewUrl() {
-		window.location.href='#/whiteboard';		
+                request({
+		    url: 'whiteboards',
+                    method: 'post',
+                }).then((res) => {
+                    console.log(res);
+		    window.location.href='#/whiteboard/' + res.msg;
+                });
 	    },
         },
         mounted () {

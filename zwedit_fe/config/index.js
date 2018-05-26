@@ -30,7 +30,7 @@ module.exports = {
         // only Dev
         assetsPublicPath: localConfig.basePath + '/',
         proxyTable: {
-            '/api': {
+            '/whiteboards': {
                 target: localConfig.baseApiPath,
                 changeOrigin: true
             },

@@ -1,7 +1,7 @@
 // see http://vuejs-templates.github.io/webpack for documentation.
 var devHost = '180.76.236.226';
 var frontendPort = '9701';
-var backendPort = '9700';
+var backendPort = '8080';
 var basePath = 'http://' + devHost + ':' + frontendPort;
 var baseApiPath = 'http://' + devHost + ':' + backendPort;
 
