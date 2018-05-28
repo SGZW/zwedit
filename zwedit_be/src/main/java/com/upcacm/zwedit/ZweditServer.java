@@ -16,10 +16,7 @@ import com.upcacm.zwedit.controller.ZweditController;
 public class ZweditServer {
 
     public static void main(String[] args) throws Exception {
-        
-        //controller init
-        ZweditController.getZweditController();
-       
+         
         Server server = new Server();
         
         NetworkTrafficServerConnector connector = new NetworkTrafficServerConnector(server);
