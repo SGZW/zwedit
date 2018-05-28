@@ -4,9 +4,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.ArrayList;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 
 import org.eclipse.jetty.websocket.api.Session;
 
@@ -15,9 +14,7 @@ import com.upcacm.zwedit.util.Pair;
 import com.upcacm.zwedit.util.JsonUtil;
 
 public class EditRoom {
-
-    private final Logger logger = LoggerFactory.getLogger(EditRoom.class);
-    
+ 
     private volatile int sessionId = 0;
 
     private volatile String text = "";
@@ -53,49 +50,48 @@ public class EditRoom {
         return String.valueOf(sessionId);
     }
          
-    public synchronized Pair<Integer, String> getNewResponse() {
-        return new Pair(new Integer(ops.size()), text);
+    public synchronized void addSessionAndSendInitResponse(String sid, Session session) throws Exception {
+        store.put(sid, session);
+        LinkedHashMap<String, Object> ret = new LinkedHashMap<String, Object>();
+        ret.put("type", "new");
+        ret.put("revision", new Integer(this.ops.size()));
+        ret.put("text", this.text);
+        String res = JsonUtil.dumpMap(ret);
+        session.getRemote().sendString(res, null);
     }
     
-    public synchronized void addSession(String sid, Session session) {
-	    store.put(sid, session);
-    }
-        
-    public String getResponse(String sid, String op) {
-        return "{ \"type\": \"merge\",\"sid\": \"" + sid + "\", \"op\" :" + op + "}";   
+    public String getResponse(String sid, LinkedList actions) throws Exception {
+        LinkedHashMap<String, Object> ret = new LinkedHashMap<String, Object>();
+        ret.put("type", "merge");
+        ret.put("sid", sid);
+        ret.put("actions", actions);
+        return JsonUtil.dumpMap(ret);
     }
     
-    public synchronized void process(String sid, int revision, TextOperation nop) {
+    public synchronized void process(String sid, int revision, TextOperation nop) throws Exception {
         
         Integer last = getLastRevision(sid);
         if (last != null && last.intValue() >= revision) return;
-        try {
-            for (int i = revision; i < ops.size(); ++i) {
-                Pair<TextOperation, TextOperation> p = TextOperation.transform(nop, ops.get(i));
-                nop = p.getA();
+        for (int i = revision; i < ops.size(); ++i) {
+            Pair<TextOperation, TextOperation> p = TextOperation.transform(nop, ops.get(i));
+            nop = p.getA();
+        }
+        this.text = nop.apply(this.text);
+        this.saveOp(sid, nop);
+        ArrayList<String> del = new ArrayList<String>();
+        for (Map.Entry<String, Session> entry: store.entrySet()) {
+            String id = entry.getKey();
+            Session session = entry.getValue();
+            if (!session.isOpen()) {
+            	del.add(id);
+                continue;	
             }
-            this.text = nop.apply(this.text);
-        
-            HashSet<String> del = new HashSet<String>();
-            String jsonOp = "";
-            for (Map.Entry<String, Session> entry: store.entrySet()) {
-                String id = entry.getKey();
-                Session session = entry.getValue();
-                if (!session.isOpen()) {
-            	    del.add(id);
-                    continue;	
-                }
-                if (!id.equals(sid)) {
-                    if (jsonOp.equals("")) jsonOp = JsonUtil.dump(nop);
-                    session.getRemote().sendString(getResponse(sid, jsonOp), null);
-                } else session.getRemote().sendString(getResponse(sid, "[]"), null);
-            }
-            for (String d: del) {
-	            if(store.containsKey(d)) store.remove(d);
-                if(lastOp.containsKey(d)) store.remove(d);
-            }
-        } catch (Exception e) {
-            logger.error("process error: " + e.getMessage());       
+            if (!id.equals(sid)) session.getRemote().sendString(getResponse(sid, nop.getActionsList()));
+            else session.getRemote().sendString(getResponse(sid, new LinkedList()), null);
+        }
+        for (String d: del) {
+            if(store.containsKey(d)) store.remove(d);
+            if(lastOp.containsKey(d)) lastOp.remove(d);
         }
     }
 }

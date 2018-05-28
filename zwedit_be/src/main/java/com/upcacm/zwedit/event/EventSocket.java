@@ -23,28 +23,29 @@ public class EventSocket {
     private final Logger logger = LoggerFactory.getLogger(EventSocket.class);
     
     
-    public static String generateNewResponse(Integer revision, String text) {
-        return "";
-    }    
-
     @OnWebSocketConnect
     public void onConnect(Session session) { 
         String roomUrl = session.getUpgradeRequest().getParameterMap().get("roomUrl").get(0);
         String sid = session.getUpgradeRequest().getParameterMap().get("sid").get(0);
-        EditRoom e = ZweditController.getZweditController().getEditRoom(roomUrl);
-        Pair<Integer, String> p = e.getNewResponse();
-        String res = generateNewResponse(p.getA(), p.getB());
-        session.getRemote().sendString(res, null);
-        e.addSession(sid, session);
+        EditRoom er = ZweditController.getZweditController().getEditRoom(roomUrl);
+        try {
+            er.addSessionAndSendInitResponse(sid, session);
+        } catch (Exception e){
+            logger.error("onConnect error: " + e.getMessage());
+        }
     }
     
     @OnWebSocketMessage
     public void onText(Session session, String message) {
         String roomUrl = session.getUpgradeRequest().getParameterMap().get("roomUrl").get(0);
         String sid = session.getUpgradeRequest().getParameterMap().get("sid").get(0);
-        EditRoom e = ZweditController.getZweditController().getEditRoom(roomUrl);
-        Pair<Integer, TextOperation> p = JsonUtil.load(message);
-        e.process(sid, p.getA().intValue(), p.getB());
+        EditRoom er = ZweditController.getZweditController().getEditRoom(roomUrl);
+        try {
+            Pair<Integer, TextOperation> p = JsonUtil.loadReq(message);
+            er.process(sid, p.getA().intValue(), p.getB());
+        } catch (Exception e) {
+            logger.error("onMessage error: " + e.getMessage());
+        }
     }
     
     @OnWebSocketError

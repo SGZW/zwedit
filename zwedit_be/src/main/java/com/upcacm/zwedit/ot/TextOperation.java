@@ -1,6 +1,7 @@
 package com.upcacm.zwedit.ot;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import com.upcacm.zwedit.util.Pair;
 
@@ -10,6 +11,24 @@ public class TextOperation {
 
     public TextOperation() {
         actions = new ArrayList<Action>();
+    }
+    
+    public LinkedList getActionsList() {
+        LinkedList ret = new LinkedList();
+        for (Action a: this.actions) {
+            switch (a.type) {
+                case RETAIN:  
+                    if (a.length() != 0) ret.add(new Integer(a.intVal));
+                    break; 
+                case DELETE:  
+                    if (a.length() != 0) ret.add(new Integer(a.intVal));
+                    break;  
+                case INSERT:
+                    if (a.length() != 0) ret.add(a.stringVal);
+                    break;
+            }
+        }
+        return ret;
     }
      
     public int len_difference() {

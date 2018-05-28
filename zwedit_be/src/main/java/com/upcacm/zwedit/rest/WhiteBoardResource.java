@@ -34,10 +34,10 @@ public class WhiteBoardResource {
     	ZweditController c = ZweditController.getZweditController();
         String res = "{\"exist\":";
         if(!c.exists(url)) res += "false }";
-	else {
+        else {
             res += "true, ";
-	    EditRoom e = c.getEditRoom(url);
-            String sid = addQuote(e.getNewSessionId());
+	        EditRoom er = c.getEditRoom(url);
+            String sid = addQuote(er.getNewSessionId());
             res += "\"sid\":" + sid + "}";
         }
         return formatRes("success", res);
@@ -46,10 +46,10 @@ public class WhiteBoardResource {
     @POST
     @Produces(MediaType.TEXT_PLAIN)
     public String createWhiteboard(String body) throws Exception {
-	ZweditController c = ZweditController.getZweditController();
-	String url = "";
+	    ZweditController c = ZweditController.getZweditController();
+	    String url = "";
         while(true) {
-	    url = generateId();
+	        url = generateId();
             if(!c.exists(url)) {
                c.createEditRoom(url);
                break;
@@ -58,5 +58,4 @@ public class WhiteBoardResource {
         url = addQuote(url);
         return formatRes("success", url);
     }
-
 }
