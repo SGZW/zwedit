@@ -8,7 +8,7 @@ java jetty
 vue.js + iview
 
 ## todo
-support a chat window
-solve class EditRoom memory problem
-    1:EditRoom object destory
-    2:EditRoom history op lists
+* support a chat window
+* solve class EditRoom memory problem
+    * EditRoom object destory
+    * EditRoom history op lists
