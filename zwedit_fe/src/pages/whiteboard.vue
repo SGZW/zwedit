@@ -207,32 +207,32 @@
             createWebSocket(roomUrl, sid) {
                 let url = 'ws://' + document.domain + ':8080/\events?' + 'roomUrl=' + this.roomUrl + '&sid=' + this.sid;
                 console.log(url);
-	            this.socket = new WebSocket(url);
-	            this.socket.onopen = this.wsOpen;
-	            this.socket.onmessage = this.wsMessage;
+                this.socket = new WebSocket(url);
+                this.socket.onopen = this.wsOpen;
+                this.socket.onmessage = this.wsMessage;
 	            this.socket.onclose = this.wsClose;
             },
             wsOpen() {
-	            console.log('Connection open ...');
+                console.log('Connection open ...');
             },
             wsSend(data) {
-	            this.socket.send(data);
-	        },
+                this.socket.send(data);
+            },
             wsClose() {
-	            console.log('Connection closed.');
+                console.log('Connection closed.');
 	        },
             wsMessage(evt) {
                 if(this.code !== evt.data) {
                     this.lastcode = evt.data;
                     this.code = evt.data;
                 }
-	            console.log('Received Message: ' + evt.data);
-	        },
+                console.log('Received Message: ' + evt.data);
+            },
             onCmCodeChange() {
                 console.log('this is new code', this.code);
                 if(this.lastcode !== this.code) {
                     this.lastcode = this.code;
-	                this.wsSend(this.code);
+                    this.wsSend(this.code);
                 }
             }
         },
