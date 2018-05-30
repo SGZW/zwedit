@@ -2,10 +2,10 @@
     <Row type="flex" :gutter="16">
         <Col span="20">
             <Card>
-                <codemirror ref="myCm"
-                            v-model="code" 
+                <codemirror ref="myCm" 
+                            v-model="code"
                             :options="cmOptions"
-                            @input="onCmCodeChange">
+                            @changes="OnCodemirrorChange">
                 </codemirror>
             </Card>
         </Col>
@@ -113,7 +113,10 @@
     import 'codemirror/addon/fold/xml-fold.js'
   
     import request from '@/libs/request';
-    import TextOperation from '@/libs/textOperation';  
+    import TextOperation from '@/libs/ot/textOperation';
+    import Syschronized from '@/libs/ot/syschronized';
+    import CodemirrorAdapter from '@/libs/ot/codemirrorAdapter';
+    import Client from '@/libs/ot/client';  
     export default {
         components: {
             codemirror
@@ -121,7 +124,6 @@
         data() {
             return {
                 socket: '',
-                lastcode: '',
                 code: '',
                 roomUrl: '',
                 sid: '',
@@ -201,6 +203,8 @@
                         },	    
                     ],		
                 },
+                ignoreNextChange : false,    
+                client: '',
             }
         },
         methods: {
@@ -215,25 +219,38 @@
             wsOpen() {
                 console.log('Connection open ...');
             },
-            wsSend(data) {
-                this.socket.send(data);
-            },
             wsClose() {
                 console.log('Connection closed.');
 	        },
             wsMessage(evt) {
-                if(this.code !== evt.data) {
-                    this.lastcode = evt.data;
-                    this.code = evt.data;
-                }
-                console.log('Received Message: ' + evt.data);
+                console.log(this.sid);
+                let msg = JSON.parse(evt.data);
+                console.log(msg);
+                if (msg.type === 'new') {
+                    this.client = new Client(this.socket, this.codemirror, msg.revision);
+                    if(msg.text !== '') {
+                        this.ignoreNextChange = true;
+                        CodemirrorAdapter.setValue(this.codemirror, msg.text);
+                    }    
+                } else {
+                    if(msg.sid === this.sid) {
+                        this.client.serverAck();
+                    } else {
+                        if(msg.actions.length !== 0) {
+                            this.ignoreNextChange = true;
+                            this.client.applyServer(new TextOperation(msg.actions));
+                        }
+                    }
+                }  
             },
-            onCmCodeChange() {
-                console.log('this is new code', this.code);
-                if(this.lastcode !== this.code) {
-                    this.lastcode = this.code;
-                    this.wsSend(this.code);
+            OnCodemirrorChange(cm, arr) {
+                if(!this.ignoreNextChange) {
+                    var curOp = CodemirrorAdapter.operationFromCodeMirrorChanges(arr, this.codemirror);
+                    console.log('changes');
+                    console.log(curOp);
+                    this.client.applyClient(curOp);
                 }
+                this.ignoreNextChange = false;
             }
         },
         mounted() {
@@ -264,6 +281,11 @@
             }
             if(this.intervalId !== '') {
                 clearInterval(this.intervalId);
+            }
+        },
+        computed: {
+            codemirror() {
+                return this.$refs.myCm.codemirror
             }
         },
     }

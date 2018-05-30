@@ -1,7 +1,7 @@
 class TextOperation {
     
-    constructor() {
-        this.ops = [];
+    constructor(ops = []) {
+        this.ops = ops.slice();
         this.baseLength = 0;
         this.targetLength = 0;
     }
@@ -28,6 +28,18 @@ class TextOperation {
         return typeof op === 'number' && op < 0;
     }
     
+    isRetain(op) {
+        return typeof op === 'number' && op > 0;
+    }
+    
+    isInsert(op) {
+        return typeof op === 'string';
+    } 
+
+    isDelete(op) {
+        return typeof op === 'number' && op < 0;     
+    }
+    
     retain(n) {
         if (typeof n !== 'number') {
             throw new Error("retain expects an integer");
@@ -35,7 +47,7 @@ class TextOperation {
         if (n === 0) { return this; }
         this.baseLength += n;
         this.targetLength += n;
-        if (isRetain(this.ops[this.ops.length-1])) {
+        if (this.isRetain(this.ops[this.ops.length-1])) {
             this.ops[this.ops.length-1] += n;
         } else {
             this.ops.push(n);
@@ -50,10 +62,10 @@ class TextOperation {
         if (str === '') { return this; }
         this.targetLength += str.length;
         var ops = this.ops;
-        if (isInsert(ops[ops.length-1])) {
+        if (this.isInsert(ops[ops.length-1])) {
             ops[ops.length-1] += str;
-        } else if (isDelete(ops[ops.length-1])) {
-            if (isInsert(ops[ops.length-2])) {
+        } else if (this.isDelete(ops[ops.length-1])) {
+            if (this.isInsert(ops[ops.length-2])) {
                 ops[ops.length-2] += str;
             } else {
                 ops[ops.length] = ops[ops.length-1];
@@ -73,7 +85,7 @@ class TextOperation {
         if (n === 0) { return this; }
         if (n > 0) { n = -n; }
         this.baseLength -= n;
-        if (isDelete(this.ops[this.ops.length-1])) {
+        if (this.isDelete(this.ops[this.ops.length-1])) {
             this.ops[this.ops.length-1] += n;
         } else {
             this.ops.push(n);
@@ -91,9 +103,9 @@ class TextOperation {
             return newArr;
         };
         return map.call(this.ops, function (op) {
-            if (isRetain(op)) {
+            if (this.isRetain(op)) {
                 return "retain " + op;
-            } else if (isInsert(op)) {
+            } else if (this.isInsert(op)) {
                 return "insert '" + op + "'";
             } else {
                 return "delete " + (-op);
@@ -109,11 +121,11 @@ class TextOperation {
         var o = new TextOperation();
         for (let i = 0, l = ops.length; i < l; i++) {
             var op = ops[i];
-            if (isRetain(op)) {
+            if (this.isRetain(op)) {
                 o.retain(op);
-            } else if (isInsert(op)) {
+            } else if (this.isInsert(op)) {
                 o.insert(op);
-            } else if (isDelete(op)) {
+            } else if (this.isDelete(op)) {
                 o.delete(op);
             } else {
                 throw new Error("unknown operation: " + JSON.stringify(op));
@@ -130,13 +142,13 @@ class TextOperation {
         var strIndex = 0;
         for (let i = 0; i < this.ops.length; i++) {
             var op = this.ops[i];
-            if (isRetain(op)) {
+            if (this.isRetain(op)) {
                 if (strIndex + op > str.length) {
                     throw new Error("Operation can't retain more characters than are left in the string.");
                 }
                 newStr[j++] = str.slice(strIndex, strIndex + op);
                 strIndex += op;
-            } else if (isInsert(op)) {
+            } else if (this.isInsert(op)) {
                 newStr[j++] = op;
             } else {
                 strIndex -= op;
@@ -154,10 +166,10 @@ class TextOperation {
         var ops = this.ops;
         for (var i = 0, l = ops.length; i < l; i++) {
             var op = ops[i];
-            if (isRetain(op)) {
+            if (this.isRetain(op)) {
                 inverse.retain(op);
                 strIndex += op;
-            } else if (isInsert(op)) {
+            } else if (this.isInsert(op)) {
                 inverse.delete(op.length);
             } else { 
                 inverse.insert(str.slice(strIndex, strIndex - op));
@@ -182,12 +194,12 @@ class TextOperation {
                 break;
             }
 
-            if (isDelete(op1)) {
+            if (this.isDelete(op1)) {
                 operation.delete(op1);
                 op1 = ops1[i1++];
                 continue;
             }
-            if (isInsert(op2)) {
+            if (this.isInsert(op2)) {
                 operation.insert(op2);
                 op2 = ops2[i2++];
                 continue;
@@ -200,7 +212,7 @@ class TextOperation {
                 throw new Error("Cannot compose operations: first operation is too long.");
             }
 
-            if (isRetain(op1) && isRetain(op2)) {
+            if (this.isRetain(op1) && this.isRetain(op2)) {
                 if (op1 > op2) {
                     operation.retain(op2);
                     op1 = op1 - op2;
@@ -214,7 +226,7 @@ class TextOperation {
                     op2 = op2 - op1;
                     op1 = ops1[i1++];
                 }
-            } else if (isInsert(op1) && isDelete(op2)) {
+            } else if (this.isInsert(op1) && this.isDelete(op2)) {
                 if (op1.length > -op2) {
                     op1 = op1.slice(-op2);
                     op2 = ops2[i2++];
@@ -225,7 +237,7 @@ class TextOperation {
                     op2 = op2 + op1.length;
                     op1 = ops1[i1++];
                 }
-            } else if (isInsert(op1) && isRetain(op2)) {
+            } else if (this.isInsert(op1) && this.isRetain(op2)) {
                 if (op1.length > op2) {
                     operation.insert(op1.slice(0, op2));
                     op1 = op1.slice(op2);
@@ -239,7 +251,7 @@ class TextOperation {
                     op2 = op2 - op1.length;
                     op1 = ops1[i1++];
                 }
-            } else if (isRetain(op1) && isDelete(op2)) {
+            } else if (this.isRetain(op1) && this.isDelete(op2)) {
                 if (op1 > -op2) {
                     operation['delete'](op2);
                     op1 = op1 + op2;
@@ -264,22 +276,9 @@ class TextOperation {
         return operation;
     }
     
-    static getSimpleOp (operation) {
-        var ops = operation.ops;
-        var isRetain = TextOperation.isRetain;
-        switch (ops.length) {
-            case 1:
-                return ops[0];
-            case 2:
-                return isRetain(ops[0]) ? ops[1] : (isRetain(ops[1]) ? ops[0] : null);
-            case 3:
-                if (isRetain(ops[0]) && isRetain(ops[2])) { return ops[1]; }
-        }
-        return null;
-    }
 
     static getStartIndex (operation) {
-        if (isRetain(operation.ops[0])) { return operation.ops[0]; }
+        if (this.isRetain(operation.ops[0])) { return operation.ops[0]; }
         return 0;
     }
     
@@ -288,10 +287,10 @@ class TextOperation {
         var startA = getStartIndex(this), startB = getStartIndex(other);
         var simpleA = getSimpleOp(this), simpleB = getSimpleOp(other);
         if (!simpleA || !simpleB) { return false; }
-        if (isInsert(simpleA) && isInsert(simpleB)) {
+        if (this.isInsert(simpleA) && this.isInsert(simpleB)) {
             return startA + simpleA.length === startB;
         }
-        if (isDelete(simpleA) && isDelete(simpleB)) {
+        if (this.isDelete(simpleA) && this.isDelete(simpleB)) {
             return (startB - simpleB === startA) || startA === startB;
         }
         return false;
@@ -303,11 +302,11 @@ class TextOperation {
         var simpleA = getSimpleOp(this), simpleB = getSimpleOp(other);
         if (!simpleA || !simpleB) { return false; }
 
-        if (isInsert(simpleA) && isInsert(simpleB)) {
+        if (this.isInsert(simpleA) && this.isInsert(simpleB)) {
             return startA + simpleA.length === startB || startA === startB;
         }
 
-        if (isDelete(simpleA) && isDelete(simpleB)) {
+        if (this.isDelete(simpleA) && this.isDelete(simpleB)) {
             return startB - simpleB === startA;
         }
 
@@ -329,13 +328,13 @@ class TextOperation {
                 break;
             }
 
-            if (isInsert(op1)) {
+            if (this.isInsert(op1)) {
                 operation1prime.insert(op1);
                 operation2prime.retain(op1.length);
                 op1 = ops1[i1++];
                 continue;
             }
-            if (isInsert(op2)) {
+            if (this.isInsert(op2)) {
                 operation1prime.retain(op2.length);
                 operation2prime.insert(op2);
                 op2 = ops2[i2++];
@@ -350,12 +349,12 @@ class TextOperation {
             }
 
             var minl;
-            if (isRetain(op1) && isRetain(op2)) {
+            if (this.isRetain(op1) && this.isRetain(op2)) {
                 if (op1 > op2) {
                     minl = op2;
                     op1 = op1 - op2;
                     op2 = ops2[i2++];
-                } else if (op1 === op2) {
+                } else if (this.op1 === this.op2) {
                     minl = op2;
                     op1 = ops1[i1++];
                     op2 = ops2[i2++];
@@ -366,7 +365,7 @@ class TextOperation {
                 }
                 operation1prime.retain(minl);
                 operation2prime.retain(minl);
-            } else if (isDelete(op1) && isDelete(op2)) {
+            } else if (this.isDelete(op1) && this.isDelete(op2)) {
                 if (-op1 > -op2) {
                     op1 = op1 - op2;
                     op2 = ops2[i2++];
@@ -377,7 +376,7 @@ class TextOperation {
                     op2 = op2 - op1;
                     op1 = ops1[i1++];
                 }
-            } else if (isDelete(op1) && isRetain(op2)) {
+            } else if (this.isDelete(op1) && this.isRetain(op2)) {
                 if (-op1 > op2) {
                     minl = op2;
                     op1 = op1 + op2;
@@ -392,7 +391,7 @@ class TextOperation {
                     op1 = ops1[i1++];
                 }
                 operation1prime.delete(minl);
-            } else if (isRetain(op1) && isDelete(op2)) {
+            } else if (this.isRetain(op1) && this.isDelete(op2)) {
                 if (op1 > -op2) {
                     minl = -op2;
                     op1 = op1 + op2;
