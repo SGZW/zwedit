@@ -54,6 +54,9 @@
         height: 800px;
         text-align: left;
         height: 800px;
+        font-size: 1.3em;
+        font-weight: 400;
+        border-left: 2px;
     }
 </style>
 <script>
@@ -130,21 +133,20 @@
                 intervalId: '',
                 cmOptions: {
                     tabSize: 4,
-                    styleSelectedText: true,
                     styleActiveLine: true,
                     mode: 'text/x-csrc',
                     lineNumbers: true,
                     line: true,
                     foldGutter: true,
-                    gutters: ['CodeMirror-linenumbers','CodeMirror-foldgutter'],
+                    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
                     highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
                     hintOptions:{
                         // 当匹配只有一项的时候是否自动补全
                         completeSingle: false
                     },
+                    showCursorWhenSelecting: true,
                     keyMap: 'sublime',
                     matchBrackets: true,
-                    showCursorWhenSelecting: true,
                     theme: 'default',
                     extraKeys: { 'Ctrl': 'autocomplete' }
                 },
