@@ -10,7 +10,7 @@ a simple online share code whiteboard (base on web)
     * websocket: jetty-websocket
     * log: log4j
     * database: redis
-* front end
+* frontend
     * code: es6
     * codeboard: codemirror.js
     * client-side mvc framework: vue.js
