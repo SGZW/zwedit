@@ -32,19 +32,17 @@
             return {
                 name: 'index',
             };
-	},
+	    },
         methods: {
-	    createNewUrl() {
+	        createNewUrl() {
                 request({
-		    url: 'whiteboards',
+		            url: 'whiteboards',
                     method: 'post',
                 }).then((res) => {
                     console.log(res);
-		    window.location.href='#/whiteboard/' + res.msg;
+		            window.location.href='#/whiteboard/' + res.msg;
                 });
-	    },
-        },
-        mounted () {
+	        },
         },
     };
 </script>

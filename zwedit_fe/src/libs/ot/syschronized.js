@@ -3,9 +3,6 @@ import AwaitingConfirm from '@/libs/ot/awaitingConfirm';
 class Synchronized {
 
     applyClient(client, operation) {
-        console.log("syschronized");
-        console.log(client);
-        console.log("syschronized");
         client.sendOperation(client.revision, operation);
         return new AwaitingConfirm(operation);
     }

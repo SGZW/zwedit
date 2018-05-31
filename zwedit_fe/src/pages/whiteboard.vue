@@ -49,6 +49,9 @@
     </Row>
 </template>
 <style>
+    .CodeMirror-cursor {
+        border-left: 2px solid black;
+    }
     .CodeMirror {
         border: 1px solid #eee;
         height: 800px;
@@ -56,7 +59,6 @@
         height: 800px;
         font-size: 1.3em;
         font-weight: 400;
-        border-left: 2px;
     }
 </style>
 <script>
@@ -211,7 +213,7 @@
         },
         methods: {
             createWebSocket(roomUrl, sid) {
-                let url = 'ws://' + document.domain + ':8080/\events?' + 'roomUrl=' + this.roomUrl + '&sid=' + this.sid;
+                let url = 'ws://' + document.domain + ':7301/\events?' + 'roomUrl=' + this.roomUrl + '&sid=' + this.sid;
                 console.log(url);
                 this.socket = new WebSocket(url);
                 this.socket.onopen = this.wsOpen;
@@ -249,7 +251,6 @@
                 if(!this.ignoreNextChange) {
                     var curOp = CodemirrorAdapter.operationFromCodeMirrorChanges(arr, this.codemirror);
                     console.log('changes');
-                    console.log(curOp);
                     this.client.applyClient(curOp);
                 }
                 this.ignoreNextChange = false;
@@ -277,7 +278,6 @@
             });
         },
         beforeDestroy () {
-            console.log(this.socket);
             if(this.socket !== '') {
                 this.socket.close();
             }

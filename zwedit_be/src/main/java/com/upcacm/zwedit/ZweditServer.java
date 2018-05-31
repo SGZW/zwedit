@@ -1,6 +1,11 @@
 package com.upcacm.zwedit;
 
+import java.util.Properties;
+
 import javax.websocket.server.ServerContainer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Connector;
@@ -13,15 +18,36 @@ import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.upcacm.zwedit.event.EventServlet;
 import com.upcacm.zwedit.controller.ZweditController;
 
+import com.upcacm.zwedit.util.RedisPool;
+
 public class ZweditServer {
+    
+    private static Logger logger = LoggerFactory.getLogger(ZweditServer.class);
 
     public static void main(String[] args) throws Exception {
-         
+        
+        Properties config = new Properties();
+        
+        config.load(ZweditServer.class.getClassLoader().getResourceAsStream("zwedit.properties")); 
+        
+        int backendPort = 7301;
+        
+        int maxIdle = 300000;
+        
+        try {
+            backendPort = Integer.parseInt(config.getProperty("jetty_server_port", "7301"));
+            maxIdle = Integer.parseInt(config.getProperty("jetty_max_idle", "300000"));
+            RedisPool.init(config);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            throw e;
+        }
+    
         Server server = new Server();
         
         NetworkTrafficServerConnector connector = new NetworkTrafficServerConnector(server);
-        connector.setPort(8080);
-        connector.setIdleTimeout(300000);        
+        connector.setPort(backendPort);
+        connector.setIdleTimeout(maxIdle);        
         
         server.addConnector(connector);
      

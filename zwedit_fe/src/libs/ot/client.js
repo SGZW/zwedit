@@ -28,8 +28,6 @@ class Client {
                 "revision": revision,
                 "actions": operation.toJSON(),
             }
-            console.log("req");
-            console.log(req);
             this.socket.send(JSON.stringify(req));
         }
     }

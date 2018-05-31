@@ -11,7 +11,6 @@ class AwaitingConfirm {
     }   
  
     applyClient(client, operation) {
-        console.log("AwaitingConfirm");
         return new AwaitingWithBuffer(this.outstanding, operation);
     }
     

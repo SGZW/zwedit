@@ -7,11 +7,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
+import redis.clients.jedis.Jedis;
+
 import org.eclipse.jetty.websocket.api.Session;
 
 import com.upcacm.zwedit.ot.TextOperation;
 import com.upcacm.zwedit.util.Pair;
 import com.upcacm.zwedit.util.JsonUtil;
+import com.upcacm.zwedit.util.RedisPool;
 
 public class EditRoom {
  
@@ -26,6 +29,8 @@ public class EditRoom {
     private ArrayList<TextOperation> ops = null;
 
     private HashMap<String, Integer> lastOp = null;
+
+    private Jedis redis = null;
     
     public EditRoom(String roomUrl) {
         this.roomUrl = roomUrl;
@@ -49,8 +54,22 @@ public class EditRoom {
         sessionId += 1;
         return String.valueOf(sessionId);
     }
+
+    public void refreshRedisClient() throws Exception {
+        if(this.redis == null) {
+            this.redis = RedisPool.getJedis();
+            this.text = this.redis.get(this.roomUrl);
+            if(this.text == null) {
+                this.redis.set(this.roomUrl, "");
+                this.text = "";
+            }
+        }       
+    }
          
     public synchronized void addSessionAndSendInitResponse(String sid, Session session) throws Exception {
+        //every connect monitor alive
+        this.refreshRedisClient();
+        
         store.put(sid, session);
         LinkedHashMap<String, Object> ret = new LinkedHashMap<String, Object>();
         ret.put("type", "new");
@@ -77,6 +96,7 @@ public class EditRoom {
             nop = p.getA();
         }
         this.text = nop.apply(this.text);
+        this.redis.set(this.roomUrl, this.text);
         this.saveOp(sid, nop);
         ArrayList<String> del = new ArrayList<String>();
         for (Map.Entry<String, Session> entry: store.entrySet()) {
@@ -92,6 +112,10 @@ public class EditRoom {
         for (String d: del) {
             if(store.containsKey(d)) store.remove(d);
             if(lastOp.containsKey(d)) lastOp.remove(d);
+        }
+        if (store.size() == 0) {
+            RedisPool.returnResource(this.redis);
+            this.redis = null;
         }
     }
 }

@@ -13,7 +13,6 @@ class AwaitingWithBuffer {
     }
     
     applyClient(client, operation) {
-        console.log("AwaitingWithBuffer");
         var newBuffer = this.buffer.compose(operation);
         return new AwaitingWithBuffer(this.outstanding, newBuffer);
     }
